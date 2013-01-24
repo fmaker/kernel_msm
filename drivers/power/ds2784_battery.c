@@ -84,7 +84,7 @@ struct battery_status {
  * gauge every FAST_POLL seconds.  If we're asleep and on battery
  * power, sample every SLOW_POLL seconds
  */
-#define FAST_POLL	(1 * 60)
+#define FAST_POLL	(1)
 #define SLOW_POLL	(10 * 60)
 
 static DEFINE_MUTEX(battery_log_lock);
@@ -559,8 +559,8 @@ done:
 
 static void ds2784_program_alarm(struct ds2784_device_info *di, int seconds)
 {
-	ktime_t low_interval = ktime_set(seconds - 10, 0);
-	ktime_t slack = ktime_set(20, 0);
+	ktime_t low_interval = ktime_set(seconds, 0);
+	ktime_t slack = ktime_set(0, 0);
 	ktime_t next;
 
 	next = ktime_add(di->last_poll, low_interval);
@@ -745,6 +745,7 @@ static struct file_operations battery_log_fops = {
 
 static int __init ds2784_battery_init(void)
 {
+	printk("FAST POLLING DS2784 LOADED.\n");
 	debugfs_create_file("battery_log", 0444, NULL, NULL, &battery_log_fops);
 	wake_lock_init(&vbus_wake_lock, WAKE_LOCK_SUSPEND, "vbus_present");
 	return platform_driver_register(&ds2784_battery_driver);

@@ -568,12 +568,14 @@ static void ds2784_program_alarm(struct ds2784_device_info *di, int seconds)
 	alarm_start_range(&di->alarm, next, ktime_add(next, slack));
 }
 
+
 static void ds2784_battery_work(struct work_struct *work)
 {
 	struct ds2784_device_info *di =
 		container_of(work, struct ds2784_device_info, monitor_work);
 	struct timespec ts;
 	unsigned long flags;
+	static int last_current = 0;
 
 	ds2784_battery_update_status(di);
 
@@ -585,6 +587,22 @@ static void ds2784_battery_work(struct work_struct *work)
 	ts = ktime_to_timespec(di->last_poll);
 	di->status.timestamp = ts.tv_sec;
 	battery_log_status(&di->status);
+
+	/* Send netlink message if current changed */
+	if(di->status.current_uA != last_current)
+	{
+		/* char *envp[2];
+		 * envp[0] = "Test";
+		 * envp[1] = NULL; */
+
+		//kobject_uevent_env(&di->dev->kobj, KOBJ_CHANGE, NULL);
+		kobject_uevent(&di->dev->kobj, KOBJ_CHANGE);
+
+		printk("Current has changed: was:%d now:%d!\n",
+			last_current, di->status.current_uA);
+		last_current = di->status.current_uA;
+	}
+		
 
 	/* prevent suspend before starting the alarm */
 	local_irq_save(flags);
@@ -641,7 +659,7 @@ static int ds2784_battery_probe(struct platform_device *pdev)
 	pdata = pdev->dev.platform_data;
 	if (!pdata || !pdata->charge || !pdata->w1_slave) {
 		pr_err("%s: pdata missing or invalid\n", __func__);
-		rc = -EINVAL;
+		rc = -EINVAL;    
 		goto fail_register;
 	}
 

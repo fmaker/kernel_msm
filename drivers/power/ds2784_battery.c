@@ -591,18 +591,9 @@ static void ds2784_battery_work(struct work_struct *work)
 	/* Send netlink message if current changed */
 	if(di->status.current_uA != last_current)
 	{
-		/* char *envp[2];
-		 * envp[0] = "Test";
-		 * envp[1] = NULL; */
-
-		//kobject_uevent_env(&di->dev->kobj, KOBJ_CHANGE, NULL);
-		kobject_uevent(&di->dev->kobj, KOBJ_CHANGE);
-
-		printk("Current has changed: was:%d now:%d!\n",
-			last_current, di->status.current_uA);
+		kobject_uevent(&di->bat.dev->kobj, KOBJ_CHANGE);
 		last_current = di->status.current_uA;
 	}
-		
 
 	/* prevent suspend before starting the alarm */
 	local_irq_save(flags);
